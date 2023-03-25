@@ -3,6 +3,10 @@ from gui_control import *
 import atexit
 import math
 
+##########################
+###### GLOBAL VARS  ######
+##########################
+
 class g: 
     earth_rad = 10
     sun_rad = 20
@@ -10,7 +14,14 @@ class g:
     mercury_rad = 10
     mercury_orbit_rad = 100
     mercury_rod_len = 600
-    pass
+    
+    def monitor_loop():
+        monitor_pause()
+        monitor_terminate()
+
+##########################
+##### TIME CLASS #####
+##########################
 
 class time:
     t = 0
@@ -18,8 +29,15 @@ class time:
     delta = 0.3
     rate = 60
 
-# wrapper class for box that places pos at the end of the rectangle rather than in the middle
+
+
+##########################
+##### WRAPPER CLASS ######
+##########################
+
+# wrapper class for box that places pos at the end of the rectangle rather than the center
 # and also tracks the head and tail of the rectangle
+# docs: https://www.glowscript.org/docs/VPythonDocs/box.html
 class new_rect:
     # pos is where to place the end of the rectangle
     def __init__(self, pos : vector, length_dim, side_dim, color_in : color):
@@ -33,28 +51,41 @@ class new_rect:
     def place_pos(self, pos_in : vector):
         vec_mag = self.length
         vec_norm = norm(self.rect.axis)
-        # print("vec_mag", vec_mag)
-        # print("norm", vec_norm)
         self.rect.pos = pos_in
         self.rect.pos.x += vec_mag * vec_norm.x/2
         self.rect.pos.y += vec_mag * vec_norm.y/2
 
+        # update head and tail of the rectangle
         self.pos_head = pos_in
         self.pos_tail = self.pos_head + self.rect.axis
-        # print(self.pos_head)
-        # print(self.rect.pos)
 
+    # update the direction in which the rectangle points
     def place_axis(self, axis_in : vector):
         # original approach, find angle between vectors and then rotate og vector
         # problem: need to determine sign for theta based on planets positions
         # theta = math.acos(dot(self.rect.axis, axis_in)/ mag(self.rect.axis) / mag(axis_in))
         # self.rect.rotate(angle = theta, origin = self.pos_head, axis = vector(0,0,1))
 
+        # second approach
         # extend a vector's magnitude but maintain direction
         self.rect.axis = hat(axis_in) * mag(self.rect.axis)
         self.place_pos(self.pos_head)
+
+
+##########################
+######  AXIS CLASS  ######
+##########################
+
+class axis:
+    def __init__(self, length):
+        self.yaxis = arrow(pos=vector(0,-length,0), axis=vector(0, length << 1,0), shaftwidth=5, color=color.green, headwidth = 5 ) 
+        self.xaxis = arrow(pos=vector(-length,0,0), axis=vector(length << 1,0,0), shaftwidth=5, color=color.red, headwidth = 5 )
+        self.zaxis = arrow(pos=vector(0,0,-length), axis=vector(0,0,length << 1), shaftwidth=5, color=color.blue, headwidth = 5 )
         
 
+##########################
+######     MAIN     ######
+##########################
 
 if __name__ == "__main__":
 
@@ -65,22 +96,14 @@ if __name__ == "__main__":
     mercury_stick = new_rect(vector(0,g.earth_orbit_rad,0), g.mercury_rod_len, 5, color.purple)
     mercury_retrograde = sphere(color = color.purple, radius = 5, make_trail = True)
 
+    # plot coordinate grid
+    grid = axis(200)
 
-
-    #plot axis
-    length = 200
-    yaxis = arrow(pos=vector(0,-length,0), axis=vector(0, length << 1,0), shaftwidth=5, color=color.green, headwidth = 5 ) 
-    xaxis = arrow(pos=vector(-length,0,0), axis=vector(length << 1,0,0), shaftwidth=5, color=color.red, headwidth = 5 )
-    zaxis = arrow(pos=vector(0,0,-length), axis=vector(0,0,length << 1), shaftwidth=5, color=color.blue, headwidth = 5 )
-
-
-    
 
     while time.t < time.end:
         rate(time.rate)
 
-        monitor_pause()
-        monitor_terminate()
+        g.monitor_loop()
 
         earth.rotate(angle=radians(0.3), axis = vector(0,0,1), origin=vector(0,0,0))
         mercury.rotate(angle=radians(2), axis = vector(0,0,1), origin = vector(0,0,0))
