@@ -25,3 +25,7 @@ def monitor_pause():
                 print("Exit function triggered. Sending the kill signal.")
                 os.kill(os.getpid(), signal.SIGINT)
                 exit()
+
+def kill():
+    os.kill(os.getpid(), signal.SIGINT)
+    exit()

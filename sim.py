@@ -8,12 +8,24 @@ import math
 ##########################
 
 class g: 
+    vel_scale = 109
     earth_rad = 10
     sun_rad = 20
     earth_orbit_rad = 250
+    earth_orbit_vel = 1/ 365 * vel_scale
     mercury_rad = 10
     mercury_orbit_rad = 100
     mercury_rod_len = 600
+    mercury_orbit_vel = 1 / 88 * vel_scale
+    venus_rad = 15
+    venus_orbit_rad = 200
+    venus_rod_len = 800
+    venus_orbit_vel = 1/ 255 * vel_scale
+    mars_rad = 10
+    mars_orbit_rad = 300
+    mars_rod_len = 900
+    mars_orbit_vel = 1/ 687 * vel_scale
+    
     
     def monitor_loop():
         monitor_pause()
@@ -25,15 +37,15 @@ class g:
 
 class time:
     t = 0
-    end = 1000
+    end = 10000
     delta = 0.3
-    rate = 60
+    rate = 500
 
 
 
-##########################
-##### WRAPPER CLASS ######
-##########################
+##################################
+##### WRAPPER CLASS FOR REC ######
+##################################
 
 # wrapper class for box that places pos at the end of the rectangle rather than the center
 # and also tracks the head and tail of the rectangle
@@ -81,7 +93,61 @@ class axis:
         self.yaxis = arrow(pos=vector(0,-length,0), axis=vector(0, length << 1,0), shaftwidth=5, color=color.green, headwidth = 5 ) 
         self.xaxis = arrow(pos=vector(-length,0,0), axis=vector(length << 1,0,0), shaftwidth=5, color=color.red, headwidth = 5 )
         self.zaxis = arrow(pos=vector(0,0,-length), axis=vector(0,0,length << 1), shaftwidth=5, color=color.blue, headwidth = 5 )
+    
+################################
+### RETROGRADE PLANET CLASS  ###
+################################
+
+class retrograde_planet:
+
+    def __init__(self, orbit_rad, planet_rad, color_in : color, stick_len, orbit_vel):
+        self.planet = sphere(pos =vector(0, orbit_rad,0), color=color_in, radius = planet_rad)
+        self.stick = new_rect(vector(0, g.earth_orbit_rad, 0), stick_len, 5, color_in)
+        self.trace = sphere(color = color_in, radius = 5, make_trail = True, retain = 1000, trail_radius = 2)
+        self.orbit_vel = orbit_vel
+
+    def update(self, earth_pos : vector):
+
+        # make the planet orbit
+        self.planet.rotate(angle=radians(self.orbit_vel), axis = vector(0,0,1), origin = vector(0,0,0))
+
+        # place the end of the stick at earth's new position
+        self.stick.place_pos(earth_pos)
         
+        # determine stick slope between earth and the planet
+        xdelta = (self.planet.pos.x - earth_pos.x)
+        ydelta = (self.planet.pos.y - earth_pos.y)
+        
+        # update what direction stick points in
+        self.stick.place_axis(vector(xdelta, ydelta, 0))
+
+        # place trace planet at end of the stick
+        self.trace.pos = self.stick.pos_tail
+
+
+################################
+####  RETROGRADE SIM CLASS  ####
+################################
+
+class retrograde_sim:
+    
+    def __init__(self, earth_orbit_vel):
+       # create the earth and sun
+       self.earth = sphere(pos= vector(0,g.earth_orbit_rad, 0), color = color.green, radius = g.earth_rad) 
+       self.sun = sphere(pos= vector(0,0,0), color = color.yellow, radius = g.sun_rad)
+       self.earth_orbit_vel = earth_orbit_vel
+
+       # list to hold retrograde planets
+       self.planets = list()
+
+    def add_planet(self, orbit_rad, planet_rad, color_in : color, stick_len, orbit_vel):
+        self.planets.append(retrograde_planet(orbit_rad, planet_rad, color_in, stick_len, orbit_vel))
+
+    def update(self):
+        self.earth.rotate(angle=radians(self.earth_orbit_vel), axis = vector(0,0,1), origin=vector(0,0,0))
+        for planet in self.planets:
+            planet.update(self.earth.pos)
+
 
 ##########################
 ######     MAIN     ######
@@ -89,46 +155,38 @@ class axis:
 
 if __name__ == "__main__":
 
+    # create the scene
     scene = canvas(height=800,width=800)
-    earth = sphere(pos= vector(0,g.earth_orbit_rad, 0), color = color.green, radius = g.earth_rad)
-    sun = sphere(pos= vector(0,0,0), color = color.yellow, radius = g.sun_rad)
-    mercury = sphere(pos = vector(0, g.mercury_orbit_rad, 0), radius = g.mercury_rad ,color= color.gray(0.6))
-    mercury_stick = new_rect(vector(0,g.earth_orbit_rad,0), g.mercury_rod_len, 5, color.purple)
-    mercury_retrograde = sphere(color = color.purple, radius = 5, make_trail = True)
 
     # plot coordinate grid
     grid = axis(200)
 
+    # create simulation and add planets
+    rs = retrograde_sim(g.earth_orbit_vel)
+    rs.add_planet(g.mercury_orbit_rad, g.mercury_rad, color.gray(0.6), g.mercury_rod_len, g.mercury_orbit_vel)
+    rs.add_planet(g.venus_orbit_rad, g.venus_rad, color.orange, g.venus_rod_len, g.venus_orbit_vel)
+    rs.add_planet(g.mars_orbit_rad, g.mars_rad, color.red, g.mars_rod_len, g.mars_orbit_vel)
+
+    print("ADD VERY FAINT CIRCULAR ORBIT PATHS")
 
     while time.t < time.end:
-        rate(time.rate)
+        # rate limit loop
+        if(time.t > 500):
+            rate(100)
+        else:
+            rate(100)
+        # print(time.t)
 
+        # monitor keyboard inputs
         g.monitor_loop()
 
-        earth.rotate(angle=radians(0.3), axis = vector(0,0,1), origin=vector(0,0,0))
-        mercury.rotate(angle=radians(2), axis = vector(0,0,1), origin = vector(0,0,0))
+        # update simulation
+        rs.update()
 
-        mercury_stick.place_pos(earth.pos)
-
-        # get intersect
-        # rect is represented by length of rod_len. 
-        # then you also have the position of mercury
-        # test by moving around mercury and seeing if it works.
-        denom = (mercury.pos.x - earth.pos.x)
-        num = (mercury.pos.y - earth.pos.y)
-        slope = 0
-        if denom < 0.0001 and denom > -0.0001:
-            slope = 1e8
-        else:
-            slope = num / denom
-        b = (earth.pos.y - slope*earth.pos.x)
-        # print("slope", slope, "b", b)
-
-        mercury_stick.place_axis(vector(denom, num, 0))
-        mercury_retrograde.pos = mercury_stick.pos_tail
-
-
+        # increment time
         time.t += time.delta
 
+    # kill script when while loop concludes
+    kill()
 
 
