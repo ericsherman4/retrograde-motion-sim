@@ -9,19 +9,19 @@ import math
 
 class g: 
     vel_scale = 109
-    earth_rad = 10
-    sun_rad = 20
+    earth_rad = 17
+    sun_rad = 25
     earth_orbit_rad = 250
     earth_orbit_vel = 1/ 365 * vel_scale
-    mercury_rad = 10
+    mercury_rad = 15
     mercury_orbit_rad = 100
     mercury_rod_len = 600
     mercury_orbit_vel = 1 / 88 * vel_scale
-    venus_rad = 15
+    venus_rad = 20
     venus_orbit_rad = 200
     venus_rod_len = 800
     venus_orbit_vel = 1/ 255 * vel_scale
-    mars_rad = 10
+    mars_rad = 17
     mars_orbit_rad = 300
     mars_rod_len = 900
     mars_orbit_vel = 1/ 687 * vel_scale
@@ -37,7 +37,7 @@ class g:
 
 class time:
     t = 0
-    end = 10000
+    end = 13000
     delta = 0.3
     rate = 500
 
@@ -103,7 +103,7 @@ class retrograde_planet:
     def __init__(self, orbit_rad, planet_rad, color_in : color, stick_len, orbit_vel):
         self.planet = sphere(pos =vector(0, orbit_rad,0), color=color_in, radius = planet_rad)
         self.stick = new_rect(vector(0, g.earth_orbit_rad, 0), stick_len, 5, color_in)
-        self.trace = sphere(color = color_in, radius = 5, make_trail = True, retain = 1000, trail_radius = 2)
+        self.trace = sphere(color = color_in, radius = 5, make_trail = True, trail_radius = 3)
         self.orbit_vel = orbit_vel
 
     def update(self, earth_pos : vector):
@@ -156,7 +156,7 @@ class retrograde_sim:
 if __name__ == "__main__":
 
     # create the scene
-    scene = canvas(height=800,width=800)
+    scene = canvas(height=1000,width=1900)
 
     # plot coordinate grid
     grid = axis(200)
@@ -167,12 +167,10 @@ if __name__ == "__main__":
     rs.add_planet(g.venus_orbit_rad, g.venus_rad, color.orange, g.venus_rod_len, g.venus_orbit_vel)
     rs.add_planet(g.mars_orbit_rad, g.mars_rad, color.red, g.mars_rod_len, g.mars_orbit_vel)
 
-    print("ADD VERY FAINT CIRCULAR ORBIT PATHS")
-
     while time.t < time.end:
         # rate limit loop
         if(time.t > 500):
-            rate(100)
+            rate(400)
         else:
             rate(100)
         # print(time.t)
@@ -186,7 +184,8 @@ if __name__ == "__main__":
         # increment time
         time.t += time.delta
 
-    # kill script when while loop concludes
-    kill()
+    while(True):
+        g.monitor_loop()
+        
 
 
